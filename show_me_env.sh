@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 echo "===== 开发环境检测脚本 ====="
 echo ""
@@ -13,16 +13,19 @@ NC="\033[0m"
 {
     # 禁用 Oh My Zsh 的自动更新提示
     DISABLE_AUTO_UPDATE="true"
-    
-    # 加载基本环境变量，忽略错误输出
+
+    # 加载常见 shell 配置
     [ -f ~/.zshrc ] && source ~/.zshrc >/dev/null 2>&1
     [ -f ~/.zprofile ] && source ~/.zprofile >/dev/null 2>&1
+    [ -f ~/.bashrc ] && source ~/.bashrc >/dev/null 2>&1
 
-    # 检查 Homebrew 路径
+    # 检查 Homebrew 路径（macOS/Ubuntu）
     if [ -f "/opt/homebrew/bin/brew" ]; then
         eval "$(/opt/homebrew/bin/brew shellenv)" >/dev/null 2>&1
     elif [ -f "/usr/local/bin/brew" ]; then
         eval "$(/usr/local/bin/brew shellenv)" >/dev/null 2>&1
+    elif [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" >/dev/null 2>&1
     fi
 
     # 加载 nvm
@@ -112,7 +115,7 @@ fi
 
 echo ""
 echo "提示："
-echo "1. 如果某些工具显示未安装但你已经安装，请运行: source ~/.zshrc"
+echo "1. 如果某些工具显示未安装但你已经安装，请运行: source ~/.zshrc 或 source ~/.bashrc"
 echo "2. 对于 Java 问题，请运行: sdk list java 查看可用版本，然后使用 sdk install java <版本> 安装"
 echo "3. 对于 Node.js，请运行: nvm install --lts 安装最新 LTS 版本"
 echo "4. 如果遇到权限问题，请运行: chmod +x show_me_env.sh"
