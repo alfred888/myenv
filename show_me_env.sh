@@ -37,6 +37,132 @@ NC="\033[0m"
     [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh" >/dev/null 2>&1
 } >/dev/null 2>&1
 
+# 显示系统信息
+echo -e "${GREEN}=== 系统信息 ===${NC}"
+# 操作系统信息
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo -e "${GREEN}✅ 操作系统: macOS $(sw_vers -productVersion)${NC}"
+elif [[ -f "/etc/lsb-release" ]]; then
+    . /etc/lsb-release
+    echo -e "${GREEN}✅ 操作系统: $DISTRIB_DESCRIPTION${NC}"
+else
+    echo -e "${GREEN}✅ 操作系统: $(uname -s)${NC}"
+fi
+
+# 主机名
+echo -e "${GREEN}✅ 主机名: $(hostname)${NC}"
+
+# 显示网络信息
+echo -e "\n${GREEN}=== 网络信息 ===${NC}"
+# 显示本机 IP 地址
+echo -e "${GREEN}✅ 本机 IP 地址:${NC}"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    for interface in $(networksetup -listallhardwareports | grep "Device:" | awk '{print $2}'); do
+        ip=$(ipconfig getifaddr $interface 2>/dev/null)
+        if [ ! -z "$ip" ]; then
+            echo -e "  - $interface: $ip"
+        fi
+    done
+else
+    # Linux
+    ip addr show | grep "inet " | grep -v "127.0.0.1" | awk '{print "  - " $2}'
+fi
+
+# 检查 SSH 服务状态
+echo -e "\n${GREEN}=== SSH 服务 ===${NC}"
+if command -v systemctl >/dev/null 2>&1; then
+    if systemctl is-active ssh >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ SSH 服务: 运行中${NC}"
+    else
+        echo -e "${RED}❌ SSH 服务: 未运行${NC}"
+    fi
+elif command -v service >/dev/null 2>&1; then
+    if service ssh status >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ SSH 服务: 运行中${NC}"
+    else
+        echo -e "${RED}❌ SSH 服务: 未运行${NC}"
+    fi
+else
+    if ps aux | grep -v grep | grep -q "sshd"; then
+        echo -e "${GREEN}✅ SSH 服务: 运行中${NC}"
+    else
+        echo -e "${RED}❌ SSH 服务: 未运行${NC}"
+    fi
+fi
+
+# 检查 SSH 端口
+if command -v lsof >/dev/null 2>&1; then
+    if lsof -i :22 >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ SSH 端口 (22): 已监听${NC}"
+    else
+        echo -e "${RED}❌ SSH 端口 (22): 未监听${NC}"
+    fi
+elif command -v netstat >/dev/null 2>&1; then
+    if netstat -tuln | grep -q ":22 "; then
+        echo -e "${GREEN}✅ SSH 端口 (22): 已监听${NC}"
+    else
+        echo -e "${RED}❌ SSH 端口 (22): 未监听${NC}"
+    fi
+fi
+
+# 检查 HTTP 服务状态
+echo -e "\n${GREEN}=== HTTP 服务 ===${NC}"
+check_http_service() {
+    local service=$1
+    local name=$2
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl is-active $service >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ $name 服务: 运行中${NC}"
+            return 0
+        fi
+    elif command -v service >/dev/null 2>&1; then
+        if service $service status >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ $name 服务: 运行中${NC}"
+            return 0
+        fi
+    else
+        if ps aux | grep -v grep | grep -q "$service"; then
+            echo -e "${GREEN}✅ $name 服务: 运行中${NC}"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# 检查 Apache 和 Nginx
+check_http_service "apache2" "Apache"
+check_http_service "httpd" "Apache"
+check_http_service "nginx" "Nginx"
+
+# 检查 HTTP 端口
+if command -v lsof >/dev/null 2>&1; then
+    if lsof -i :80 >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ HTTP 端口 (80): 已监听${NC}"
+    else
+        echo -e "${RED}❌ HTTP 端口 (80): 未监听${NC}"
+    fi
+    if lsof -i :443 >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ HTTPS 端口 (443): 已监听${NC}"
+    else
+        echo -e "${RED}❌ HTTPS 端口 (443): 未监听${NC}"
+    fi
+elif command -v netstat >/dev/null 2>&1; then
+    if netstat -tuln | grep -q ":80 "; then
+        echo -e "${GREEN}✅ HTTP 端口 (80): 已监听${NC}"
+    else
+        echo -e "${RED}❌ HTTP 端口 (80): 未监听${NC}"
+    fi
+    if netstat -tuln | grep -q ":443 "; then
+        echo -e "${GREEN}✅ HTTPS 端口 (443): 已监听${NC}"
+    else
+        echo -e "${RED}❌ HTTPS 端口 (443): 未监听${NC}"
+    fi
+fi
+
+# 原有的环境检查
+echo -e "\n${GREEN}=== 开发环境 ===${NC}"
+
 # 检查 Java
 if command -v java >/dev/null 2>&1; then
     JAVA_VERSION=$(java -version 2>&1 | head -n 1 | sed 's/"//g')
