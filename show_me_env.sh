@@ -9,6 +9,46 @@ RED="\033[0;31m"
 YELLOW="\033[1;33m"
 NC="\033[0m"
 
+# 检测是否为树莓派
+is_raspberry_pi() {
+    if [ -f /proc/device-tree/model ]; then
+        grep -q "Raspberry Pi" /proc/device-tree/model
+        return $?
+    fi
+    return 1
+}
+
+# 获取树莓派信息
+get_raspberry_pi_info() {
+    if is_raspberry_pi; then
+        echo -e "\n${GREEN}=== 树莓派信息 ===${NC}"
+        # 获取树莓派型号
+        if [ -f /proc/device-tree/model ]; then
+            echo -e "${GREEN}✅ 型号: $(cat /proc/device-tree/model)${NC}"
+        fi
+        
+        # 获取 CPU 温度
+        if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
+            temp=$(cat /sys/class/thermal/thermal_zone0/temp)
+            temp_c=$(echo "scale=1; $temp/1000" | bc)
+            echo -e "${GREEN}✅ CPU 温度: ${temp_c}°C${NC}"
+        fi
+        
+        # 获取内存信息
+        if command -v free >/dev/null 2>&1; then
+            total_mem=$(free -h | grep Mem | awk '{print $2}')
+            used_mem=$(free -h | grep Mem | awk '{print $3}')
+            echo -e "${GREEN}✅ 内存: ${used_mem}/${total_mem}${NC}"
+        fi
+        
+        # 获取存储信息
+        if command -v df >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ 存储空间:${NC}"
+            df -h / | grep -v "Filesystem" | awk '{print "  - 总空间: " $2 "\n  - 已用: " $3 "\n  - 可用: " $4}'
+        fi
+    fi
+}
+
 # 静默加载环境变量
 {
     # 禁用 Oh My Zsh 的自动更新提示
@@ -40,7 +80,13 @@ NC="\033[0m"
 # 显示系统信息
 echo -e "${GREEN}=== 系统信息 ===${NC}"
 # 操作系统信息
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if is_raspberry_pi; then
+    echo -e "${GREEN}✅ 设备: 树莓派${NC}"
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo -e "${GREEN}✅ 操作系统: $PRETTY_NAME${NC}"
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo -e "${GREEN}✅ 操作系统: macOS $(sw_vers -productVersion)${NC}"
 elif [[ -f "/etc/lsb-release" ]]; then
     . /etc/lsb-release
@@ -52,11 +98,24 @@ fi
 # 主机名
 echo -e "${GREEN}✅ 主机名: $(hostname)${NC}"
 
+# 显示树莓派特定信息
+get_raspberry_pi_info
+
 # 显示网络信息
 echo -e "\n${GREEN}=== 网络信息 ===${NC}"
 # 显示本机 IP 地址
 echo -e "${GREEN}✅ 本机 IP 地址:${NC}"
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if is_raspberry_pi; then
+    # 树莓派特定网络接口
+    for interface in eth0 wlan0; do
+        if ip addr show $interface >/dev/null 2>&1; then
+            ip=$(ip addr show $interface | grep "inet " | awk '{print $2}')
+            if [ ! -z "$ip" ]; then
+                echo -e "  - $interface: $ip"
+            fi
+        fi
+    done
+elif [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     for interface in $(networksetup -listallhardwareports | grep "Device:" | awk '{print $2}'); do
         ip=$(ipconfig getifaddr $interface 2>/dev/null)
@@ -245,3 +304,9 @@ echo "1. 如果某些工具显示未安装但你已经安装，请运行: source
 echo "2. 对于 Java 问题，请运行: sdk list java 查看可用版本，然后使用 sdk install java <版本> 安装"
 echo "3. 对于 Node.js，请运行: nvm install --lts 安装最新 LTS 版本"
 echo "4. 如果遇到权限问题，请运行: chmod +x show_me_env.sh"
+if is_raspberry_pi; then
+    echo "5. 树莓派特定提示："
+    echo "   - 使用 'vcgencmd measure_temp' 查看更详细的温度信息"
+    echo "   - 使用 'vcgencmd get_mem arm' 查看 GPU 内存分配"
+    echo "   - 使用 'raspi-config' 进行系统配置"
+fi
