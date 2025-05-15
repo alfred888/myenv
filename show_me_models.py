@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 
 # 常见的大模型存储路径
 COMMON_MODEL_PATHS = [
+    # 工作空间路径
+    os.path.expanduser("~/workspace"),
     # Hugging Face 默认路径
     os.path.expanduser("~/.cache/huggingface/hub"),
     # Transformers 默认路径
@@ -15,6 +17,10 @@ COMMON_MODEL_PATHS = [
     # 自定义路径
     os.path.expanduser("~/models"),
     os.path.expanduser("~/Downloads/models"),
+    # 远程仓库路径
+    os.path.expanduser("~/.cache/huggingface/transformers"),
+    os.path.expanduser("~/.cache/huggingface/datasets"),
+    os.path.expanduser("~/.cache/huggingface/metrics"),
 ]
 
 def get_model_info(model_path: Path) -> Dict:
