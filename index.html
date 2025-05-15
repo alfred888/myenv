@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试服务器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #4caf50;
+        }
+        .warning {
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 HTTP 测试服务器</h1>
+    <div class="container">
+        <h2>服务器信息</h2>
+        <div class="info">
+            <p><strong>状态：</strong><span class="success">运行中</span></p>
+            <p><strong>时间：</strong><span id="current-time"></span></p>
+            <p><strong>客户端 IP：</strong><span id="client-ip">获取中...</span></p>
+        </div>
+    </div>
+    <script>
+        // 更新时间
+        function updateTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 获取客户端 IP
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('client-ip').textContent = data.ip;
+            })
+            .catch(() => {
+                document.getElementById('client-ip').textContent = '无法获取';
+            });
+    </script>
+</body>
+</html>
