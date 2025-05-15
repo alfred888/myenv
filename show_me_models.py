@@ -23,6 +23,9 @@ COMMON_MODEL_PATHS = [
     os.path.expanduser("~/.cache/huggingface/metrics"),
 ]
 
+# 排除的非模型目录
+EXCLUDE_DIRS = {"site-packages", "__MACOSX", ".venv", "env", "venv", "node_modules", "__pycache__", "temp", "tmp", ".tmp", ".temp", ".DS_Store"}
+
 def get_model_info(model_path: Path) -> Dict:
     """获取模型信息"""
     info = {
@@ -67,6 +70,12 @@ def find_model_files() -> List[Dict]:
             continue
             
         for root, dirs, files in os.walk(base_path):
+            # 优化：排除常见的非模型目录和以点开头的隐藏目录
+            path_parts = root.split(os.sep)
+            if any(ex in path_parts for ex in EXCLUDE_DIRS):
+                continue
+            if any(part.startswith('.') for part in path_parts if part):
+                continue
             # 检查是否包含模型文件
             if any(f.endswith(('.bin', '.pt', '.pth', '.safetensors', '.gguf')) for f in files):
                 model_path = Path(root)
