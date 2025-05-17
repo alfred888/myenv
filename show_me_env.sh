@@ -310,3 +310,20 @@ if is_raspberry_pi; then
     echo "   - 使用 'vcgencmd get_mem arm' 查看 GPU 内存分配"
     echo "   - 使用 'raspi-config' 进行系统配置"
 fi
+
+echo "============================="
+echo "Conda 安装情况检查"
+echo "============================="
+
+if command -v conda >/dev/null 2>&1; then
+    echo "Conda 已安装。"
+    conda --version
+    echo
+    echo "============================="
+    echo "已有的 Conda 虚拟环境："
+    echo "============================="
+    conda env list
+else
+    echo "Conda 未安装。"
+    echo "请访问 https://docs.conda.io/en/latest/miniconda.html 下载并安装 Conda。"
+fi
